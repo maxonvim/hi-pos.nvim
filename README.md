@@ -1,5 +1,7 @@
 # hi-pos.nvim
 
+![hi-pos.nvim demo](assets/demo.gif)
+
 Natural language part-of-speech highlighting for Neovim, powered by
 [Compromise](https://github.com/spencermountain/compromise).
 
