@@ -22,7 +22,7 @@ local default_highlight = {
 }
 
 local defaults = {
-  command = { "node" },
+  node_command = { "node" },
   debounce_ms = 250,
   disable_uppercase_filenames = true,
   filetypes = { "markdown", "text", "gitcommit" },
@@ -180,9 +180,22 @@ local function notify_error(message)
 end
 
 local function command()
-  local cmd = vim.deepcopy(config.command)
+  local cmd = vim.deepcopy(config.node_command)
   table.insert(cmd, script_path())
   return cmd
+end
+
+local function command_error(cmd, detail)
+  local executable = cmd[1] or "node"
+
+  return table.concat({
+    "Could not start the hi-pos helper.",
+    "Missing executable: " .. executable,
+    detail,
+    "Install Node.js and make sure `node` is on your PATH.",
+    "Or pass a custom Node.js path to setup:",
+    'require("hi_pos").setup({ node_command = { "/path/to/node" } })',
+  }, "\n")
 end
 
 local function run(bufnr)
@@ -208,8 +221,16 @@ local function run(bufnr)
 
   state.generation = state.generation + 1
   local generation = state.generation
+  local cmd = command()
 
-  vim.system(command(), { stdin = text, text = true }, function(result)
+  if vim.fn.executable(cmd[1]) ~= 1 then
+    state.enabled = false
+    clear(bufnr)
+    notify_error(command_error(cmd, "Neovim could not find the executable before launching the helper."))
+    return
+  end
+
+  local ok, system_or_error = pcall(vim.system, cmd, { stdin = text, text = true }, function(result)
     vim.schedule(function()
       local latest = buffers[bufnr]
 
@@ -232,6 +253,12 @@ local function run(bufnr)
       apply_ranges(bufnr, ranges)
     end)
   end)
+
+  if not ok then
+    state.enabled = false
+    clear(bufnr)
+    notify_error(command_error(cmd, tostring(system_or_error)))
+  end
 end
 
 local function schedule(bufnr)

@@ -38,6 +38,7 @@ local pos = require("hi_pos").setup({
   disable_uppercase_filenames = true,
   max_buffer_size = 200000,
   filetypes = { "markdown", "text", "gitcommit" },
+  node_command = { "node" },
   markdown = {
     include = {
       paragraphs = true,
